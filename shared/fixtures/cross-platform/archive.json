@@ -1,6 +1,7 @@
 {
   "preferences" : {
     "aiConsentVersion" : 1,
+    "apiBaseUrl" : "",
     "hasOnboarded" : true,
     "hiddenWords" : [
       "en|soup|a hot liquid food"

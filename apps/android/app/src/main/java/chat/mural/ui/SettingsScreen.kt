@@ -278,6 +278,7 @@ private fun SettingsHistorySheet(vm: MuralViewModel, onDismiss: () -> Unit, onSe
 private fun KeyDialog(vm: MuralViewModel, onDismiss: () -> Unit) {
     // Intentionally starts empty even when a key exists; secrets never flow back into Compose state.
     var key by remember { mutableStateOf("") }
+    var baseUrl by remember { mutableStateOf(vm.archive.preferences.apiBaseUrl) }
     Dialog(onDismissRequest = { key = ""; onDismiss() }) {
         val view = LocalView.current
         DisposableEffect(view) {
@@ -299,9 +300,18 @@ private fun KeyDialog(vm: MuralViewModel, onDismiss: () -> Unit) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                     label = { Text(stringResource(R.string.settings_key_dialog_field_label)) },
                 )
+                MuralTextField(
+                    baseUrl, { baseUrl = it.take(500) }, Modifier.fillMaxWidth().testTag("api-base-url-input"),
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
+                    label = { Text("Custom API URL") }
+                )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     MuralTextButton(onClick = { key = ""; onDismiss() }) { Text(stringResource(R.string.common_cancel)) }
-                    Button(onClick = { vm.saveKey(key.trim()); key = ""; onDismiss() }, enabled = key.isNotBlank()) { Text(stringResource(R.string.common_save)) }
+                    Button(onClick = {
+                        if (key.isNotBlank()) vm.saveKey(key.trim())
+                        vm.updatePreferences(vm.archive.preferences.copy(apiBaseUrl = baseUrl.trim()))
+                        key = ""; onDismiss()
+                    }) { Text(stringResource(R.string.common_save)) }
                 }
             }
         }

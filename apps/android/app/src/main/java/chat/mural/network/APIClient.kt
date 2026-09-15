@@ -18,6 +18,7 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -30,13 +31,14 @@ data class APIResult(val text: String, val sources: List<SourceLink>, val usage:
 
 class APIClient private constructor(
     private val readCredential: () -> String?,
+    private val readBaseUrl: () -> String = { "" },
     private val client: OkHttpClient = defaultClient(),
-    private val baseUrl: HttpUrl = API_BASE_URL,
+    private val defaultBaseUrl: HttpUrl = API_BASE_URL,
 ) : TeachingClient, LiveSessionProvider {
-    constructor(credentials: CredentialStore) : this(credentials::read)
+    constructor(credentials: CredentialStore, readBaseUrl: () -> String = { "" }) : this(credentials::read, readBaseUrl)
 
-    internal constructor(key: String?, client: OkHttpClient, baseUrl: HttpUrl) :
-        this({ key }, client, baseUrl)
+    internal constructor(key: String?, client: OkHttpClient, defaultBaseUrl: HttpUrl) :
+        this({ key }, { "" }, client, defaultBaseUrl)
 
     override suspend fun createLiveSession(request: LiveSessionRequest): LiveSessionConnection {
         val result = post("live/sessions", buildJsonObject {
@@ -60,8 +62,11 @@ class APIClient private constructor(
             throw APIException.InvalidResponse
         }
         val key = readCredential() ?: throw APIException.MissingKey
+        val customUrl = readBaseUrl()
+        val url = if (customUrl.isBlank()) defaultBaseUrl.newBuilder().addPathSegments(path).build()
+                  else customUrl.toHttpUrlOrNull()?.newBuilder()?.addPathSegments(path)?.build() ?: throw java.io.IOException("Invalid URL")
         val request = Request.Builder()
-            .url(baseUrl.newBuilder().addPathSegments(path).build())
+            .url(url)
             .header("Authorization", "Bearer $key")
             .header("Content-Type", JSON_MEDIA_TYPE.toString())
             .post(body.toString().toRequestBody(JSON_MEDIA_TYPE))
