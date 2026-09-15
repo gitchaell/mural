@@ -335,6 +335,10 @@ struct SettingsView: View {
                         }
                         Text("Your OpenAI account pays for usage. The key stays in this iPhone’s Keychain and is sent only to OpenAI.")
                             .font(.footnote).foregroundStyle(MuralColor.secondary)
+                        TextField("Custom API URL", text: Binding(get: { store.preferences.apiBaseUrl }, set: { value in store.updatePreferences { $0.apiBaseUrl = value } }))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .keyboardType(.URL)
                     } label: { Label("Use your own API key", systemImage: "key").accessibilityIdentifier("advanced-api-key") }
                     if let message { Text(message).font(.footnote).foregroundStyle(MuralColor.secondary) }
                 } header: { Text("Advanced") } footer: {

@@ -10,7 +10,9 @@ struct APIResult { var text: String; var sources: [SourceLink]; var usage: APIUs
 
 @MainActor final class APIClient {
     private let session: URLSession
-    init() {
+    private let baseUrlProvider: () -> String
+    init(baseUrlProvider: @escaping () -> String) {
+        self.baseUrlProvider = baseUrlProvider
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 45; config.timeoutIntervalForResource = 60
         config.httpCookieStorage = nil; config.urlCache = nil
@@ -18,7 +20,10 @@ struct APIResult { var text: String; var sources: [SourceLink]; var usage: APIUs
     }
     func post(_ path: String, body: [String: Any]) async throws -> [String: Any] {
         guard let key = CredentialStore.read() else { throw APIError.missingKey }
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/" + path)!)
+        let base = baseUrlProvider().isEmpty ? "https://api.openai.com/v1/" : baseUrlProvider()
+        let urlString = (base.hasSuffix("/") ? base : base + "/") + path
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"; request.setValue("Bearer " + key, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

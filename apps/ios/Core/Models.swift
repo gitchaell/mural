@@ -156,6 +156,7 @@ public struct Preferences: Codable, Sendable {
     public var interests = ""
     public var hasOnboarded = false
     public var aiConsentVersion: Int?
+    public var apiBaseUrl = ""
     public init() {}
 }
 
