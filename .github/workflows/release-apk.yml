@@ -30,6 +30,12 @@ jobs:
 
       - name: Create Release and Upload APK
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Aquí está la variable que querías poner:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
         with:
+          # Cambiado a 'v-latest' porque GitHub Releases requiere obligatoriamente un formato de tag válido si corres en workflow_dispatch
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v-latest' }}
           files: apps/android/app/build/outputs/apk/debug/app-debug.apk
           generate_release_notes: true
